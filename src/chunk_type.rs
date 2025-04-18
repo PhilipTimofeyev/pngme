@@ -4,8 +4,8 @@ use std::str::FromStr;
 use std::str;
 
 #[derive(Debug, PartialEq, Eq)]
-struct ChunkType {
-    chunk: [u8; 4]
+pub struct ChunkType {
+    pub chunk: [u8; 4]
 }
 
 impl ChunkType {
