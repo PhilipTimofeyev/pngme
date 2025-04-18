@@ -11,7 +11,7 @@ struct Chunk {
 }
 
 impl Chunk {
-    fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
+    pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let data_length = data.len();
         let crc = get_crc(&chunk_type, &data);      
 
@@ -23,19 +23,23 @@ impl Chunk {
         }
     }
 
-    fn length(&self) -> u32 {
+    pub fn length(&self) -> u32 {
         self.data_length
     }
 
-    fn crc(&self) -> u32 {
+    pub fn crc(&self) -> u32 {
         self.crc
     }
 
-    fn chunk_type(&self) -> &ChunkType {
+    pub fn chunk_type(&self) -> &ChunkType {
         &self.chunk_type
     }
 
-    fn data_as_string(&self) -> Result<String, Error> {
+    pub fn data(&self) -> &[u8] {
+        &self.chunk_data
+    }
+
+    pub fn data_as_string(&self) -> Result<String, Error> {
         Ok(String::from_utf8(self.chunk_data.clone()).unwrap())
     }
 }
@@ -75,9 +79,14 @@ impl TryFrom<&[u8]> for Chunk {
 }
 
 impl fmt::Display for Chunk {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let result = &self.data_as_string().unwrap();
-        write!(f, "{}", result)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Chunk {{",)?;
+        writeln!(f, "  Length: {}", self.length())?;
+        writeln!(f, "  Type: {}", self.chunk_type())?;
+        writeln!(f, "  Data: {} bytes", self.data().len())?;
+        writeln!(f, "  Crc: {}", self.crc())?;
+        writeln!(f, "}}",)?;
+        Ok(())
     }
 }
 
