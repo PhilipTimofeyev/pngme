@@ -8,77 +8,50 @@ struct ChunkType {
     chunk: [u8; 4]
 }
 
+impl ChunkType {
+    fn bytes(&self) -> [u8; 4] {
+        self.chunk
+    }
+
+    fn is_critical(&self) -> bool {
+        let first_byte = self.chunk.iter().nth(0).unwrap();
+        let char = char::from(*first_byte);
+
+        char == char.to_ascii_uppercase()
+    }
+
+    fn is_public(&self) -> bool {
+        let second_byte = self.chunk.iter().nth(1).unwrap();
+        let char = char::from(*second_byte);
+
+        char == char.to_ascii_uppercase()
+    }
+
+    fn is_reserved_bit_valid(&self) -> bool {
+        let third_byte = self.chunk.iter().nth(2).unwrap();
+        let char = char::from(*third_byte);
+
+        char == char.to_ascii_uppercase()
+    }
+
+    fn is_safe_to_copy(&self) -> bool {
+        let fourth_byte = self.chunk.iter().nth(3).unwrap();
+        let char = char::from(*fourth_byte);
+
+        char == char.to_ascii_lowercase()
+    }
+
+    fn is_valid(&self) -> bool {
+        self.is_reserved_bit_valid() &&
+        self.is_safe_to_copy()
+    }
+}
+
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
 
     fn try_from(chunk: [u8; 4]) -> Result<Self, Self::Error> {
         Ok(ChunkType { chunk })
-    }
-}
-
-trait Bytes {
-    fn bytes(&self) -> [u8; 4];
-}
-
-impl Bytes for ChunkType {
-    fn bytes(&self) -> [u8; 4] {
-        self.chunk
-    }
-}
-
-trait IsCritial {
-    fn is_critical(&self) -> bool;
-}
-
-impl IsCritial for ChunkType {
-    fn is_critical(&self) -> bool {
-        let first_byte = self.chunk.iter().nth(0).unwrap();
-
-        let char = char::from(*first_byte);
-
-        char == char.to_ascii_uppercase()
-    }
-}
-
-trait IsPublic {
-    fn is_public(&self) -> bool;
-}
-
-impl IsPublic for ChunkType {
-    fn is_public(&self) -> bool {
-        let second_byte = self.chunk.iter().nth(1).unwrap();
-
-        let char = char::from(*second_byte);
-
-        char == char.to_ascii_uppercase()
-    }
-}
-
-trait IsReserved {
-    fn is_reserved_bit_valid(&self) -> bool;
-}
-
-impl IsReserved for ChunkType {
-    fn is_reserved_bit_valid(&self) -> bool {
-        let third_byte = self.chunk.iter().nth(2).unwrap();
-
-        let char = char::from(*third_byte);
-
-        char == char.to_ascii_uppercase()
-    }
-}
-
-trait IsSafeToCopy {
-    fn is_safe_to_copy(&self) -> bool;
-}
-
-impl IsSafeToCopy for ChunkType {
-    fn is_safe_to_copy(&self) -> bool {
-        let fourth_byte = self.chunk.iter().nth(3).unwrap();
-
-        let char = char::from(*fourth_byte);
-
-        char == char.to_ascii_lowercase()
     }
 }
 
