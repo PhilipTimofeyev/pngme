@@ -24,6 +24,20 @@ impl Bytes for ChunkType {
     }
 }
 
+trait IsCritial {
+    fn is_critical(&self) -> bool;
+}
+
+impl IsCritial for ChunkType {
+    fn is_critical(&self) -> bool {
+        let first_byte = self.chunk.iter().nth(0).unwrap();
+
+        let char = char::from(*first_byte);
+
+        char == char.to_ascii_uppercase()
+    }
+}
+
 impl FromStr for ChunkType {
     type Err = Error;
 
@@ -61,11 +75,11 @@ mod tests {
         assert!(chunk.is_critical());
     }
 
-    // #[test]
-    // pub fn test_chunk_type_is_not_critical() {
-    //     let chunk = ChunkType::from_str("ruSt").unwrap();
-    //     assert!(!chunk.is_critical());
-    // }
+    #[test]
+    pub fn test_chunk_type_is_not_critical() {
+        let chunk = ChunkType::from_str("ruSt").unwrap();
+        assert!(!chunk.is_critical());
+    }
 
     // #[test]
     // pub fn test_chunk_type_is_public() {
