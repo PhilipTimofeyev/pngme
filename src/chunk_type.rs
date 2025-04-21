@@ -2,10 +2,23 @@ use core::fmt;
 use std::fmt::Error;
 use std::str::FromStr;
 use std::str;
+use std::process;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ChunkType {
     pub chunk: [u8; 4]
+}
+#[derive(Debug)]
+pub enum ChunkTypeError {
+    InvalidASCII(String)
+}
+
+impl fmt::Display for ChunkTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ChunkTypeError::InvalidASCII(e) => write!(f, "ChunkType Error: {}", e),
+        }
+    }
 }
 
 impl ChunkType {
@@ -42,24 +55,26 @@ impl ChunkType {
     }
 
     fn is_valid(&self) -> bool {
-        self.is_reserved_bit_valid() &&
-        self.is_safe_to_copy()
+        self.is_reserved_bit_valid()
     }
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
-    type Error = Error;
+    type Error = ChunkTypeError;
 
     fn try_from(chunk: [u8; 4]) -> Result<Self, Self::Error> {
         let chunk_type = ChunkType { chunk };
 
-        // if chunk_type.is_reserved_bit_valid() && chunk_type.is_safe_to_copy() {
-        //     return Ok(chunk_type)
-        // } else {
-        //     return Err(Error)
-        // }
+        let check_all_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
 
-        Ok(chunk_type)
+        if check_all_ascii_alphabet {
+            Ok(chunk_type)
+        } else {
+            let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
+            eprintln!("{}", error_message);
+            process::exit(1);
+        }
+
     }
 }
 
