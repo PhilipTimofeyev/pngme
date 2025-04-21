@@ -51,18 +51,15 @@ impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
 
     fn try_from(chunk: [u8; 4]) -> Result<Self, Self::Error> {
-        Ok(ChunkType { chunk })
-    }
-}
+        let chunk_type = ChunkType { chunk };
 
-trait IsValid {
-    fn is_valid(&self) -> bool;
-}
+        // if chunk_type.is_reserved_bit_valid() && chunk_type.is_safe_to_copy() {
+        //     return Ok(chunk_type)
+        // } else {
+        //     return Err(Error)
+        // }
 
-impl IsValid for ChunkType {
-    fn is_valid(&self) -> bool {
-        self.is_reserved_bit_valid() &&
-        self.is_safe_to_copy()
+        Ok(chunk_type)
     }
 }
 

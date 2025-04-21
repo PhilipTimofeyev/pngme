@@ -2,12 +2,14 @@ use crate::chunk_type::{self, ChunkType};
 use std::fmt::Error;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use core::fmt;
+use std::io::prelude::*;
 
-struct Chunk {
-    data_length: u32,
-    chunk_type: ChunkType,
-    chunk_data: Vec<u8>,
-    crc: u32
+#[derive(Debug)]
+pub struct Chunk {
+    pub data_length: u32,
+    pub chunk_type: ChunkType,
+    pub chunk_data: Vec<u8>,
+    pub crc: u32
 }
 
 impl Chunk {
@@ -41,6 +43,26 @@ impl Chunk {
 
     pub fn data_as_string(&self) -> Result<String, Error> {
         Ok(String::from_utf8(self.chunk_data.clone()).unwrap())
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut result: Vec<u8> = Vec::new();
+
+        let length_as_u8 = (u32::to_be_bytes(self.length()));
+        for byte in length_as_u8 {result.push(byte)}
+        
+        for byte in self.chunk_type.chunk {
+            result.push(byte);
+        }
+
+        for byte in self.data() {
+            result.push(*byte);
+        }
+
+        let length_as_u8 = (u32::to_be_bytes(self.crc()));
+        for byte in length_as_u8 {result.push(byte)}
+
+        result
     }
 }
 
