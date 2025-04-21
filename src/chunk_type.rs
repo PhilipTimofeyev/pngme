@@ -71,7 +71,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
             Ok(chunk_type)
         } else {
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
-            eprintln!("{}", error_message);
+            eprintln!("{}", ChunkTypeError::InvalidASCII(error_message));
             process::exit(1);
         }
 
