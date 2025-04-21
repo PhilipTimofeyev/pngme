@@ -112,14 +112,8 @@ impl TryFrom<&[u8]> for Chunk {
             Ok(chunk)
         } else {
             let error_message = "Invalid CRC".to_string();
-            // eprintln!("{}", ChunkError::InvalidCRC(error_message));
             return Err(ChunkError::InvalidCRC(error_message))
-            // process::exit(1);
         }
-
-        // return is_valid_crc.then(|| chunk).ok_or(ChunkError::Hmm);
-        // Ok(chunk)
-
     }
 }
 

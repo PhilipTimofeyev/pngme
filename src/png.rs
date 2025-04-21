@@ -1,17 +1,28 @@
 use crate::chunk::Chunk;
-use crate::chunk_type::{self, ChunkType};
 use std::io;
 use core::fmt;
 use std::convert::TryFrom;
-use std::fmt::Error;
 use std::io::{Seek, Read, Cursor};
+use std::process;
 
 #[derive(Debug)]
-struct Png {
-    signature: [u8; 8],
-    chunks: Vec<Chunk>
+pub struct Png {
+    pub signature: [u8; 8],
+    pub chunks: Vec<Chunk>
 }
 
+#[derive(Debug)]
+pub enum PNGError {
+    HeaderError(String)
+}
+
+impl fmt::Display for PNGError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PNGError::HeaderError(e) => write!(f, "PNG Error: {}", e),
+        }
+    }
+}
 
 impl Png {
     pub const STANDARD_HEADER: [u8; 8] = [137,80,78,71,13,10,26,10];
@@ -61,65 +72,49 @@ impl fmt::Display for Png {
 }
 
 impl TryFrom<&[u8]> for Png {
-    type Error = Error;
-    
+    type Error = PNGError;
     
     fn try_from(chunks: &[u8]) -> Result<Self, Self::Error> {
         let header: [u8; 8] = chunks[0..=7].try_into().unwrap();
-
-        if header != Png::STANDARD_HEADER {return Err(Error)}
 
 
         let chunks  = &chunks[8..];
         let mut file = Cursor::new(chunks);
         let mut all_chunks = Vec::new();
-        
-        let mut buffer = vec![0; 4];
+
 
         loop {
+            let mut buffer = vec![0; 4];
             match file.read_exact(&mut buffer) {
-                Ok(_) => println!("Successfully read {} bytes.", buffer.len()),
+                Ok(_) => println!("Successfully read length as {} bytes.", buffer.len()),
                 Err(_) => break
             }
             let chunk_length = u32::from_be_bytes(<[u8; 4]>::try_from(buffer.clone()).unwrap());
-            println!("{chunk_length}");
             
             file.seek_relative(-4).unwrap();
             buffer = vec![0; (chunk_length + 12) as usize];
 
             match file.read_exact(&mut buffer) {
-                Ok(_) => println!("Successfully read {} bytes.", buffer.len()),
+                Ok(_) => println!("Successfully read data as {} bytes.", buffer.len()),
                 Err(_) => break
             }
-
-            // let chunk = Chunk::try_from(buffer.as_ref()).unwrap();
-            println!("{:?}", buffer);
             
             let chunk = match Chunk::try_from(buffer.as_ref()) {
                 Ok(chunk) => chunk,
-                Err(e) => return Err(e)
+                Err(e) => { 
+                    eprintln!("{}", e);
+                    process::exit(1);
+                }
             };
 
             all_chunks.push(chunk);
 
-            buffer = vec![0; 4];
             // buffer = vec![0; 4];
-            // file.read_exact(&mut buffer).unwrap();
-            // let as_arr: [u8; 4] = buffer.clone().try_into().unwrap();
-            // let chunk_type = ChunkType::try_from(as_arr);
-
-            // buffer = vec![0; length as usize];
-            // file.read_exact(&mut buffer).unwrap();
-            // let chunk_data = buffer.clone();
-
-            // buffer = vec![0; 4];
-            // file.read_exact(&mut buffer).unwrap();
-            // let crc = buffer.clone();
         }
 
-        // let hmm = Png { signature: Png::STANDARD_HEADER, chunks: all_chunks };
-        if all_chunks.is_empty() {
-            return Err(Error)
+        if header != Png::STANDARD_HEADER {
+            let error_message = "Header::Invalid header.".to_string();
+            return Err(PNGError::HeaderError(error_message))
         } else {
             Ok(Png { signature: Png::STANDARD_HEADER, chunks: all_chunks })
         }
@@ -129,9 +124,8 @@ impl TryFrom<&[u8]> for Png {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chunk_type::ChunkType;
+    use crate::chunk_type::{ChunkType, ChunkTypeError};
     use crate::chunk::Chunk;
-    use std::str::FromStr;
     use std::convert::TryFrom;
 
     fn testing_chunks() -> Vec<Chunk> {
@@ -147,7 +141,7 @@ mod tests {
         Png::from_chunks(chunks)
     }
 
-    fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk, Error> {
+    fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk, ChunkTypeError> {
         use std::str::FromStr;
 
         let chunk_type = ChunkType::from_str(chunk_type)?;
@@ -155,6 +149,7 @@ mod tests {
 
         Ok(Chunk::new(chunk_type, data))
     }
+
 
     #[test]
     fn test_from_chunks() {

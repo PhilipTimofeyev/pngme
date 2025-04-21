@@ -79,14 +79,14 @@ impl TryFrom<[u8; 4]> for ChunkType {
 }
 
 impl FromStr for ChunkType {
-    type Err = Error;
+    type Err = ChunkTypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let valid_ascii_alphabet = s.chars().all(|c| c.is_ascii_alphabetic());
         let chunk_arr: [u8; 4] = s.as_bytes().try_into().unwrap();
         let chunk = ChunkType { chunk: chunk_arr};
 
-        valid_ascii_alphabet.then(|| chunk).ok_or(Error)
+        valid_ascii_alphabet.then(|| chunk).ok_or(ChunkTypeError::InvalidASCII("Lol".to_string()))
     }
 }
 
