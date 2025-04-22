@@ -1,5 +1,5 @@
 use crate::chunk_type::{self, ChunkType};
-use std::fmt::Error;
+use std::error::Error;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use core::fmt;
 use std::process;
@@ -54,7 +54,7 @@ impl Chunk {
         &self.chunk_data
     }
 
-    pub fn data_as_string(&self) -> Result<String, Error> {
+    pub fn data_as_string(&self) -> Result<String, Box<dyn Error>> {
         Ok(String::from_utf8(self.chunk_data.clone()).unwrap())
     }
 
@@ -79,17 +79,20 @@ impl Chunk {
     }
 }
 
-impl TryFrom<&[u8]> for Chunk {
-    type Error = ChunkError;
+impl Error for ChunkError {}
 
-    fn try_from(chunk_data: &[u8]) -> Result<Self, ChunkError> {
+impl TryFrom<&[u8]> for Chunk {
+    type Error = Box<dyn Error>;
+
+    fn try_from(chunk_data: &[u8]) -> Result<Self, Box<dyn Error>> {
         // let chunk_data: Vec<u8> = chunk_data.try_into().unwrap();
 
         let length: [u8; 4] = chunk_data[0..=3].try_into().unwrap();
         let length: u32 = u32::from_be_bytes(length);
 
         let chunk_type: [u8; 4] = chunk_data[4..=7].try_into().unwrap();
-        let chunk_type: ChunkType = ChunkType::try_from(chunk_type).unwrap();
+        let chunk_type = ChunkType::try_from(chunk_type)?;
+
 
         let data_range: usize = (length + 7) as usize;
         let data: Vec<u8> = chunk_data[8..=data_range].try_into().unwrap();
@@ -98,7 +101,6 @@ impl TryFrom<&[u8]> for Chunk {
         let crc = u32::from_be_bytes(crc);
 
         let validated_crc = get_crc(&chunk_type, &data);
-
         let is_valid_crc = validated_crc == crc;
 
         let chunk = Chunk {
@@ -112,7 +114,7 @@ impl TryFrom<&[u8]> for Chunk {
             Ok(chunk)
         } else {
             let error_message = "Invalid CRC".to_string();
-            return Err(ChunkError::InvalidCRC(error_message))
+            return Err(Box::new(ChunkError::InvalidCRC(error_message)))
         }
     }
 }

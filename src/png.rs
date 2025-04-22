@@ -4,6 +4,7 @@ use core::fmt;
 use std::convert::TryFrom;
 use std::io::{Seek, Read, Cursor};
 use std::process;
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct Png {
@@ -71,10 +72,12 @@ impl fmt::Display for Png {
     }
 }
 
+impl Error for PNGError {}
+
 impl TryFrom<&[u8]> for Png {
-    type Error = PNGError;
+    type Error = Box<dyn Error>;
     
-    fn try_from(chunks: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(chunks: &[u8]) -> Result<Self, Box<dyn Error>> {
         let header: [u8; 8] = chunks[0..=7].try_into().unwrap();
 
 
@@ -91,7 +94,7 @@ impl TryFrom<&[u8]> for Png {
             }
             let chunk_length = u32::from_be_bytes(<[u8; 4]>::try_from(buffer.clone()).unwrap());
             
-            file.seek_relative(-4).unwrap();
+            file.seek_relative(-4)?;
             buffer = vec![0; (chunk_length + 12) as usize];
 
             match file.read_exact(&mut buffer) {
@@ -99,22 +102,14 @@ impl TryFrom<&[u8]> for Png {
                 Err(_) => break
             }
             
-            let chunk = match Chunk::try_from(buffer.as_ref()) {
-                Ok(chunk) => chunk,
-                Err(e) => { 
-                    eprintln!("{}", e);
-                    process::exit(1);
-                }
-            };
+            let chunk = Chunk::try_from(buffer.as_ref())?;
 
             all_chunks.push(chunk);
-
-            // buffer = vec![0; 4];
         }
 
         if header != Png::STANDARD_HEADER {
             let error_message = "Header::Invalid header.".to_string();
-            return Err(PNGError::HeaderError(error_message))
+            return Err(Box::new(PNGError::HeaderError(error_message)))
         } else {
             Ok(Png { signature: Png::STANDARD_HEADER, chunks: all_chunks })
         }

@@ -1,5 +1,5 @@
 use core::fmt;
-use std::fmt::Error;
+use std::error::Error;
 use std::str::FromStr;
 use std::str;
 use std::process;
@@ -12,6 +12,8 @@ pub struct ChunkType {
 pub enum ChunkTypeError {
     InvalidASCII(String)
 }
+
+impl Error for ChunkTypeError {}
 
 impl fmt::Display for ChunkTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -71,8 +73,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
             Ok(chunk_type)
         } else {
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
-            eprintln!("{}", ChunkTypeError::InvalidASCII(error_message));
-            process::exit(1);
+            return Err(ChunkTypeError::InvalidASCII(error_message))
         }
 
     }
