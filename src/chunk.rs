@@ -1,8 +1,8 @@
 use crate::chunk_type::{self, ChunkType};
-use std::error::Error;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use core::fmt;
-use std::process;
+pub type Error = Box<dyn std::error::Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -54,8 +54,8 @@ impl Chunk {
         &self.chunk_data
     }
 
-    pub fn data_as_string(&self) -> Result<String, Box<dyn Error>> {
-        Ok(String::from_utf8(self.chunk_data.clone()).unwrap())
+    pub fn data_as_string(&self) -> Result<String> {
+        Ok(String::from_utf8(self.chunk_data.clone())?)
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
@@ -79,25 +79,22 @@ impl Chunk {
     }
 }
 
-impl Error for ChunkError {}
+impl std::error::Error for ChunkError {}
 
 impl TryFrom<&[u8]> for Chunk {
-    type Error = Box<dyn Error>;
+    type Error = Error;
 
-    fn try_from(chunk_data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        // let chunk_data: Vec<u8> = chunk_data.try_into().unwrap();
-
-        let length: [u8; 4] = chunk_data[0..=3].try_into().unwrap();
+    fn try_from(chunk_data: &[u8]) -> Result<Self> {
+        let length: [u8; 4] = chunk_data[0..=3].try_into()?;
         let length: u32 = u32::from_be_bytes(length);
 
-        let chunk_type: [u8; 4] = chunk_data[4..=7].try_into().unwrap();
+        let chunk_type: [u8; 4] = chunk_data[4..=7].try_into()?;
         let chunk_type = ChunkType::try_from(chunk_type)?;
 
-
         let data_range: usize = (length + 7) as usize;
-        let data: Vec<u8> = chunk_data[8..=data_range].try_into().unwrap();
+        let data: Vec<u8> = chunk_data[8..=data_range].try_into()?;
 
-        let crc: [u8; 4] = chunk_data[(data_range + 1)..].try_into().unwrap();
+        let crc: [u8; 4] = chunk_data[(data_range + 1)..].try_into()?;
         let crc = u32::from_be_bytes(crc);
 
         let validated_crc = get_crc(&chunk_type, &data);
@@ -110,12 +107,10 @@ impl TryFrom<&[u8]> for Chunk {
             crc: crc
         };
 
-        if is_valid_crc {
-            Ok(chunk)
-        } else {
+        is_valid_crc.then(|| chunk).ok_or({
             let error_message = "Invalid CRC".to_string();
-            return Err(Box::new(ChunkError::InvalidCRC(error_message)))
-        }
+            ChunkError::InvalidCRC(error_message).into()
+        })
     }
 }
 
@@ -138,8 +133,6 @@ fn get_crc(chunk_type: &ChunkType, data: &Vec<u8>) -> u32 {
     digest.update(&data);
     digest.finalize()
 }
-
-
 
 #[cfg(test)]
 mod tests {

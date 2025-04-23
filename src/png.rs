@@ -3,8 +3,9 @@ use std::io;
 use core::fmt;
 use std::convert::TryFrom;
 use std::io::{Seek, Read, Cursor};
-use std::process;
-use std::error::Error;
+
+pub type Error = Box<dyn std::error::Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Png {
@@ -40,11 +41,9 @@ impl Png {
     }
 
     fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
-        let chunk = self.chunks.iter().filter(|chunk| {
+        self.chunks.iter().filter(|chunk| {
             chunk.chunk_type.to_string() == chunk_type
-        }).next();
-    
-        chunk
+        }).next()
     }
 
     fn append_chunk(&mut self, chunk: Chunk) {
@@ -72,19 +71,16 @@ impl fmt::Display for Png {
     }
 }
 
-impl Error for PNGError {}
+impl std::error::Error for PNGError {}
 
 impl TryFrom<&[u8]> for Png {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     
-    fn try_from(chunks: &[u8]) -> Result<Self, Box<dyn Error>> {
-        let header: [u8; 8] = chunks[0..=7].try_into().unwrap();
-
-
+    fn try_from(chunks: &[u8]) -> Result<Self> {
+        let header: [u8; 8] = chunks[0..=7].try_into()?;
         let chunks  = &chunks[8..];
         let mut file = Cursor::new(chunks);
         let mut all_chunks = Vec::new();
-
 
         loop {
             let mut buffer = vec![0; 4];
@@ -103,16 +99,16 @@ impl TryFrom<&[u8]> for Png {
             }
             
             let chunk = Chunk::try_from(buffer.as_ref())?;
-
             all_chunks.push(chunk);
         }
 
-        if header != Png::STANDARD_HEADER {
+        let png = Png { signature: Png::STANDARD_HEADER, chunks: all_chunks };
+        let is_valid_header = header == Png::STANDARD_HEADER;
+
+        is_valid_header.then(|| png).ok_or({
             let error_message = "Header::Invalid header.".to_string();
-            return Err(Box::new(PNGError::HeaderError(error_message)))
-        } else {
-            Ok(Png { signature: Png::STANDARD_HEADER, chunks: all_chunks })
-        }
+            PNGError::HeaderError(error_message).into()
+        })
     }
 }
 
@@ -136,7 +132,7 @@ mod tests {
         Png::from_chunks(chunks)
     }
 
-    fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk, ChunkTypeError> {
+    fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk> {
         use std::str::FromStr;
 
         let chunk_type = ChunkType::from_str(chunk_type)?;

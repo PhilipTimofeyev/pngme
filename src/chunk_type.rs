@@ -1,8 +1,8 @@
 use core::fmt;
-use std::error::Error;
 use std::str::FromStr;
 use std::str;
-use std::process;
+pub type Error = Box<dyn std::error::Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ChunkType {
@@ -13,7 +13,7 @@ pub enum ChunkTypeError {
     InvalidASCII(String)
 }
 
-impl Error for ChunkTypeError {}
+impl std::error::Error for ChunkTypeError {}
 
 impl fmt::Display for ChunkTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -62,32 +62,31 @@ impl ChunkType {
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
-    type Error = ChunkTypeError;
+    type Error = Error;
 
-    fn try_from(chunk: [u8; 4]) -> Result<Self, Self::Error> {
+    fn try_from(chunk: [u8; 4]) -> Result<Self> {
         let chunk_type = ChunkType { chunk };
+        let valid_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
 
-        let check_all_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
-
-        if check_all_ascii_alphabet {
-            Ok(chunk_type)
-        } else {
+        valid_ascii_alphabet.then(|| chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
-            return Err(ChunkTypeError::InvalidASCII(error_message))
-        }
-
+            ChunkTypeError::InvalidASCII(error_message).into()
+        })
     }
 }
 
 impl FromStr for ChunkType {
-    type Err = ChunkTypeError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let valid_ascii_alphabet = s.chars().all(|c| c.is_ascii_alphabetic());
-        let chunk_arr: [u8; 4] = s.as_bytes().try_into().unwrap();
-        let chunk = ChunkType { chunk: chunk_arr};
+        let chunk_arr: [u8; 4] = s.as_bytes().try_into()?;
+        let chunk_type = ChunkType { chunk: chunk_arr};
 
-        valid_ascii_alphabet.then(|| chunk).ok_or(ChunkTypeError::InvalidASCII("Lol".to_string()))
+        valid_ascii_alphabet.then(|| chunk_type).ok_or({
+            let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
+            ChunkTypeError::InvalidASCII(error_message).into()
+        })
     }
 }
 
