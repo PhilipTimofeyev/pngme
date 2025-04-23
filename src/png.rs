@@ -1,8 +1,8 @@
 use crate::chunk::Chunk;
-use std::io;
 use core::fmt;
 use std::convert::TryFrom;
-use std::io::{Seek, Read, Cursor};
+use std::io;
+use std::io::{Cursor, Read, Seek};
 
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
@@ -10,12 +10,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 pub struct Png {
     pub signature: [u8; 8],
-    pub chunks: Vec<Chunk>
+    pub chunks: Vec<Chunk>,
 }
 
 #[derive(Debug)]
 pub enum PNGError {
-    HeaderError(String)
+    HeaderError(String),
 }
 
 impl fmt::Display for PNGError {
@@ -27,12 +27,12 @@ impl fmt::Display for PNGError {
 }
 
 impl Png {
-    pub const STANDARD_HEADER: [u8; 8] = [137,80,78,71,13,10,26,10];
-    
+    pub const STANDARD_HEADER: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
+
     fn from_chunks(chunks: Vec<Chunk>) -> Png {
         Png {
             signature: Png::STANDARD_HEADER,
-            chunks: chunks
+            chunks,
         }
     }
 
@@ -41,9 +41,9 @@ impl Png {
     }
 
     fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
-        self.chunks.iter().filter(|chunk| {
-            chunk.chunk_type.to_string() == chunk_type
-        }).next()
+        self.chunks
+            .iter()
+            .find(|chunk| chunk.chunk_type.to_string() == chunk_type)
     }
 
     fn append_chunk(&mut self, chunk: Chunk) {
@@ -58,7 +58,9 @@ impl Png {
     fn as_bytes(&self) -> Vec<u8> {
         println!("{:?}", self);
         let mut result = vec![self.signature.to_vec()];
-        for chunk in &self.chunks {result.push(chunk.as_bytes())}
+        for chunk in &self.chunks {
+            result.push(chunk.as_bytes())
+        }
         result.into_iter().flatten().collect()
     }
 }
@@ -75,10 +77,10 @@ impl std::error::Error for PNGError {}
 
 impl TryFrom<&[u8]> for Png {
     type Error = Error;
-    
+
     fn try_from(chunks: &[u8]) -> Result<Self> {
         let header: [u8; 8] = chunks[0..=7].try_into()?;
-        let chunks  = &chunks[8..];
+        let chunks = &chunks[8..];
         let mut file = Cursor::new(chunks);
         let mut all_chunks = Vec::new();
 
@@ -86,26 +88,29 @@ impl TryFrom<&[u8]> for Png {
             let mut buffer = vec![0; 4];
             match file.read_exact(&mut buffer) {
                 Ok(_) => println!("Successfully read length as {} bytes.", buffer.len()),
-                Err(_) => break
+                Err(_) => break,
             }
             let chunk_length = u32::from_be_bytes(<[u8; 4]>::try_from(buffer.clone()).unwrap());
-            
+
             file.seek_relative(-4)?;
             buffer = vec![0; (chunk_length + 12) as usize];
 
             match file.read_exact(&mut buffer) {
                 Ok(_) => println!("Successfully read data as {} bytes.", buffer.len()),
-                Err(_) => break
+                Err(_) => break,
             }
-            
+
             let chunk = Chunk::try_from(buffer.as_ref())?;
             all_chunks.push(chunk);
         }
 
-        let png = Png { signature: Png::STANDARD_HEADER, chunks: all_chunks };
+        let png = Png {
+            signature: Png::STANDARD_HEADER,
+            chunks: all_chunks,
+        };
         let is_valid_header = header == Png::STANDARD_HEADER;
 
-        is_valid_header.then(|| png).ok_or({
+        is_valid_header.then_some(png).ok_or({
             let error_message = "Header::Invalid header.".to_string();
             PNGError::HeaderError(error_message).into()
         })
@@ -115,8 +120,8 @@ impl TryFrom<&[u8]> for Png {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chunk_type::{ChunkType, ChunkTypeError};
     use crate::chunk::Chunk;
+    use crate::chunk_type::{ChunkType, ChunkTypeError};
     use std::convert::TryFrom;
 
     fn testing_chunks() -> Vec<Chunk> {
@@ -140,7 +145,6 @@ mod tests {
 
         Ok(Chunk::new(chunk_type, data))
     }
-
 
     #[test]
     fn test_from_chunks() {
@@ -207,7 +211,6 @@ mod tests {
         assert!(png.is_err());
     }
 
-
     #[test]
     fn test_list_chunks() {
         let png = testing_png();
@@ -221,7 +224,6 @@ mod tests {
         let chunk = png.chunk_by_type("FrSt").unwrap();
         assert_eq!(&chunk.chunk_type().to_string(), "FrSt");
         assert_eq!(&chunk.data_as_string().unwrap(), "I am the first chunk");
-
     }
 
     #[test]

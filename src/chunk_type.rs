@@ -1,16 +1,16 @@
 use core::fmt;
-use std::str::FromStr;
 use std::str;
+use std::str::FromStr;
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ChunkType {
-    pub chunk: [u8; 4]
+    pub chunk: [u8; 4],
 }
 #[derive(Debug)]
 pub enum ChunkTypeError {
-    InvalidASCII(String)
+    InvalidASCII(String),
 }
 
 impl std::error::Error for ChunkTypeError {}
@@ -29,28 +29,28 @@ impl ChunkType {
     }
 
     fn is_critical(&self) -> bool {
-        let first_byte = self.chunk.iter().nth(0).unwrap();
+        let first_byte = self.chunk.first().unwrap();
         let char = char::from(*first_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_public(&self) -> bool {
-        let second_byte = self.chunk.iter().nth(1).unwrap();
+        let second_byte = self.chunk.get(1).unwrap();
         let char = char::from(*second_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_reserved_bit_valid(&self) -> bool {
-        let third_byte = self.chunk.iter().nth(2).unwrap();
+        let third_byte = self.chunk.get(2).unwrap();
         let char = char::from(*third_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_safe_to_copy(&self) -> bool {
-        let fourth_byte = self.chunk.iter().nth(3).unwrap();
+        let fourth_byte = self.chunk.get(3).unwrap();
         let char = char::from(*fourth_byte);
 
         char == char.to_ascii_lowercase()
@@ -68,7 +68,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
         let chunk_type = ChunkType { chunk };
         let valid_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
 
-        valid_ascii_alphabet.then(|| chunk_type).ok_or({
+        valid_ascii_alphabet.then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
@@ -81,9 +81,9 @@ impl FromStr for ChunkType {
     fn from_str(s: &str) -> Result<Self> {
         let valid_ascii_alphabet = s.chars().all(|c| c.is_ascii_alphabetic());
         let chunk_arr: [u8; 4] = s.as_bytes().try_into()?;
-        let chunk_type = ChunkType { chunk: chunk_arr};
+        let chunk_type = ChunkType { chunk: chunk_arr };
 
-        valid_ascii_alphabet.then(|| chunk_type).ok_or({
+        valid_ascii_alphabet.then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
