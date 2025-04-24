@@ -18,6 +18,8 @@ pub struct Png {
 #[derive(Debug)]
 pub enum PNGError {
     HeaderError(String),
+    
+
 }
 
 impl fmt::Display for PNGError {
@@ -53,8 +55,6 @@ impl Png {
     }
 
     pub fn remove_first_chunk(&mut self, chunk_type: &str) -> Result<Chunk> {
-        // let chunk = self.chunk_by_type(chunk_type).unwrap()
-
         if let Some(index) = self
             .chunks
             .iter()

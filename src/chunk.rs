@@ -15,12 +15,14 @@ pub struct Chunk {
 #[derive(Debug)]
 pub enum ChunkError {
     InvalidCRC(String),
+    NotFound(String)
 }
 
 impl fmt::Display for ChunkError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ChunkError::InvalidCRC(e) => write!(f, "Chunk Error: {}", e),
+            ChunkError::NotFound(e) => write!(f, "Chunk Error: {}", e)
         }
     }
 }
