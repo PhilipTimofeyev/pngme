@@ -19,10 +19,15 @@ pub struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    match cli.command {
+    let result = match cli.command {
         PngMeArgs::Encode(args) => commands::encode(args),
         PngMeArgs::Decode(args) => commands::decode(args),
         PngMeArgs::Remove(args) => commands::remove(args),
+    };
+
+    if let Err(e) = result {
+        println!("{}", e)
     }
 
+    Ok(())
 }

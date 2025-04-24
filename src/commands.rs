@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::args::{DecodeArgs, EncodeArgs, PrintArgs, RemoveArgs};
-use crate::png::{Chunk, ChunkType, PNGError, Png};
-use crate::{chunk, Error, Result};
+use crate::png::{Chunk, ChunkType, Png};
+use crate::{Result, chunk};
 
 /// Encodes a message into a PNG file and saves the result
 pub fn encode(args: EncodeArgs) -> Result<()> {
@@ -27,8 +27,12 @@ pub fn encode(args: EncodeArgs) -> Result<()> {
 pub fn decode(args: DecodeArgs) -> Result<()> {
     let png_file = read_file(&args.filepath)?;
     let result = Png::try_from(&png_file[..])?;
-    let decoded_message = result.chunk_by_type(args.chunk_type.as_str())
-        .ok_or(chunk::ChunkError::NotFound("Chunktype not found.".to_string()))?;
+    let decoded_message =
+        result
+            .chunk_by_type(args.chunk_type.as_str())
+            .ok_or(chunk::ChunkError::NotFound(
+                "Chunktype not found.".to_string(),
+            ))?;
 
     println!("{}", decoded_message.data_as_string()?);
 

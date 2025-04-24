@@ -1,8 +1,8 @@
 pub use crate::chunk::Chunk;
+use crate::chunk::ChunkError;
 pub use crate::chunk_type::ChunkType;
 use core::fmt;
 use std::convert::TryFrom;
-use std::io;
 use std::io::{Cursor, Read, Seek};
 use std::str::FromStr;
 
@@ -18,8 +18,6 @@ pub struct Png {
 #[derive(Debug)]
 pub enum PNGError {
     HeaderError(String),
-    
-
 }
 
 impl fmt::Display for PNGError {
@@ -63,7 +61,7 @@ impl Png {
             let chunk = self.chunks.swap_remove(index);
             Ok(chunk)
         } else {
-            Err(PNGError::HeaderError("remove chunk error".to_string()).into())
+            Err(ChunkError::NotFound("Chunktype not found.".to_string()).into())
         }
     }
 
@@ -97,18 +95,17 @@ impl TryFrom<&[u8]> for Png {
 
         loop {
             let mut buffer = vec![0; 4];
-            match file.read_exact(&mut buffer) {
-                Ok(_) => println!("Successfully read length as {} bytes.", buffer.len()),
-                Err(_) => break,
+
+            if let Err(_e) = file.read_exact(&mut buffer) {
+                break;
             }
             let chunk_length = u32::from_be_bytes(<[u8; 4]>::try_from(buffer.clone()).unwrap());
 
             file.seek_relative(-4)?;
             buffer = vec![0; (chunk_length + 12) as usize];
 
-            match file.read_exact(&mut buffer) {
-                Ok(_) => println!("Successfully read data as {} bytes.", buffer.len()),
-                Err(_) => break,
+            if let Err(_e) = file.read_exact(&mut buffer) {
+                break;
             }
 
             let chunk = Chunk::try_from(buffer.as_ref())?;
