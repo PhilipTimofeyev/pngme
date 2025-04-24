@@ -23,13 +23,13 @@ pub struct DecodeArgs {
     pub chunk_type: String
 }
 
-#[derive(clap::Args, Debug)]
+#[derive(Args, Debug)]
 pub struct RemoveArgs {
     pub filepath: PathBuf,
     pub chunk_type: String
 }
 
-#[derive(clap::Args, Debug)]
+#[derive(Args, Debug)]
 pub struct PrintArgs {
     // Write me!
 }

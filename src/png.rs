@@ -1,5 +1,5 @@
-use crate::chunk::Chunk;
-use crate::chunk_type::ChunkType;
+pub use crate::chunk::Chunk;
+pub use crate::chunk_type::ChunkType;
 use core::fmt;
 use std::convert::TryFrom;
 use std::io;
