@@ -23,6 +23,7 @@ fn main() -> Result<()> {
         PngMeArgs::Encode(args) => commands::encode(args),
         PngMeArgs::Decode(args) => commands::decode(args),
         PngMeArgs::Remove(args) => commands::remove(args),
+        PngMeArgs::Print(args) => commands::print_chunks(args),
     };
 
     if let Err(e) = result {

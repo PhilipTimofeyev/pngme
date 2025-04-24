@@ -58,7 +58,14 @@ pub fn remove(args: RemoveArgs) -> Result<()> {
 
 /// Prints all of the chunks in a PNG file
 pub fn print_chunks(args: PrintArgs) -> Result<()> {
-    todo!()
+    let png_file = read_file(&args.filepath)?;
+    let result = Png::try_from(&png_file[..])?;
+
+    for chunk in result.chunks() {
+        println!("{}", chunk)
+    }
+
+    Ok(())
 }
 
 fn read_file(filepath: &PathBuf) -> Result<Vec<u8>> {
