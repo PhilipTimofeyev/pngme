@@ -1,24 +1,4 @@
 use std::path::PathBuf;
-use clap::{Parser, Subcommand};
-
-// #[derive(Parser)]
-// #[command(version, about, long_about = None)]
-// struct Cli {
-//     command: String,
-
-//     // #[arg(short, long, value_name = "FILE")]
-//     // config: String,
-// }
-
-// pub fn get_args() {
-//     let cli = Cli::parse();
-
-//     // You can check the value provided by positional arguments, or option arguments
-//     // if let Some(name) = cli.command {
-//         println!("Value for name: {}", cli.command);
-//     // }
-// }
-
 
 pub enum PngMeArgs {
     Encode(EncodeArgs),
@@ -28,18 +8,20 @@ pub enum PngMeArgs {
 }
 #[derive(Debug)]
 pub struct EncodeArgs {
-    pub file: String,
+    pub filepath: PathBuf,
     pub chunk_type: String,
     pub message: String,
     pub output_file: Option<String>
 }
 
 pub struct DecodeArgs {
-    // Write me!
+    pub filepath: PathBuf,
+    pub chunk_type: String
 }
 
 pub struct RemoveArgs {
-    // Write me!
+    pub filepath: PathBuf,
+    pub chunk_type: String
 }
 
 pub struct PrintArgs {
