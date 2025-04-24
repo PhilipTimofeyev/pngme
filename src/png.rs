@@ -1,8 +1,10 @@
 use crate::chunk::Chunk;
+use crate::chunk_type::ChunkType;
 use core::fmt;
 use std::convert::TryFrom;
 use std::io;
 use std::io::{Cursor, Read, Seek};
+use std::str::FromStr;
 
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
@@ -40,22 +42,30 @@ impl Png {
         &self.chunks
     }
 
-    fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+    pub fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         self.chunks
             .iter()
             .find(|chunk| chunk.chunk_type.to_string() == chunk_type)
     }
 
-    fn append_chunk(&mut self, chunk: Chunk) {
+    pub fn append_chunk(&mut self, chunk: Chunk) {
         self.chunks.push(chunk)
     }
 
-    fn remove_first_chunk(&mut self, chunk_type: &str) -> io::Result<Chunk> {
-        let chunk = self.chunks.pop();
-        Ok(chunk.unwrap())
+    pub fn remove_first_chunk(&mut self, chunk_type: &str) -> Result<Chunk> {
+        // let chunk = self.chunk_by_type(chunk_type).unwrap()
+
+        if let Some(index) = self.chunks.iter().position(|value| *value.chunk_type() == ChunkType::from_str(chunk_type).unwrap()) {
+            let chunk = self.chunks.swap_remove(index);
+            Ok(chunk)
+        } else {
+            return Err(PNGError::HeaderError("remove chunk error".to_string()).into())
+        }
+
+        // Ok(chunk)
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let mut result = vec![self.signature.to_vec()];
         for chunk in &self.chunks {
             result.push(chunk.as_bytes())
