@@ -56,7 +56,6 @@ impl Png {
     }
 
     fn as_bytes(&self) -> Vec<u8> {
-        println!("{:?}", self);
         let mut result = vec![self.signature.to_vec()];
         for chunk in &self.chunks {
             result.push(chunk.as_bytes())
