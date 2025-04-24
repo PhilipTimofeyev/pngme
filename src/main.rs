@@ -11,7 +11,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
- pub struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     command: PngMeArgs,
 }
@@ -19,11 +19,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let result = match cli.command {
-        PngMeArgs::Encode(args ) => commands::encode(args),
-        PngMeArgs::Decode(args ) => commands::decode(args),
-        PngMeArgs::Remove(args ) => commands::remove(args),
-    };
+    match cli.command {
+        PngMeArgs::Encode(args) => commands::encode(args),
+        PngMeArgs::Decode(args) => commands::decode(args),
+        PngMeArgs::Remove(args) => commands::remove(args),
+    }
 
-    result
 }

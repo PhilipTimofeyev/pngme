@@ -55,14 +55,16 @@ impl Png {
     pub fn remove_first_chunk(&mut self, chunk_type: &str) -> Result<Chunk> {
         // let chunk = self.chunk_by_type(chunk_type).unwrap()
 
-        if let Some(index) = self.chunks.iter().position(|value| *value.chunk_type() == ChunkType::from_str(chunk_type).unwrap()) {
+        if let Some(index) = self
+            .chunks
+            .iter()
+            .position(|value| *value.chunk_type() == ChunkType::from_str(chunk_type).unwrap())
+        {
             let chunk = self.chunks.swap_remove(index);
             Ok(chunk)
         } else {
-            return Err(PNGError::HeaderError("remove chunk error".to_string()).into())
+            Err(PNGError::HeaderError("remove chunk error".to_string()).into())
         }
-
-        // Ok(chunk)
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
