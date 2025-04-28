@@ -67,7 +67,6 @@ impl TryFrom<[u8; 4]> for ChunkType {
 
     fn try_from(chunk_type: [u8; 4]) -> Result<Self> {
         let chunk_type = ChunkType { chunk_type };
-        println!("{}", chunk_type.is_valid());
 
         chunk_type.is_valid().then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of four alphabetic ASCII bytes, with the third being uppercase.".to_string();

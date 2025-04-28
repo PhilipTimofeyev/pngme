@@ -5,6 +5,7 @@ use std::io::Read;
 use std::fs::read;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::env;
 
 use crate::args::{DecodeArgs, EncodeArgs, PrintArgs, RemoveArgs};
 use crate::png::{Chunk, ChunkType, Png};
@@ -20,7 +21,16 @@ pub fn encode(args: EncodeArgs) -> Result<()> {
 
     result.append_chunk(chunk);
 
-    fs::write(&args.filepath, result.as_bytes())?;
+    let current_dir = env::current_dir()?;
+    
+    match args.output_file {
+        Some(output_path) => {
+            let file_path = PathBuf::from(current_dir).join(output_path);
+            fs::write(file_path, result.as_bytes())?;
+        },
+        None => fs::write(args.filepath, result.as_bytes())?
+    }
+
     Ok(())
 }
 
