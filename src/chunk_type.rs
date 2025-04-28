@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ChunkType {
-    pub chunk: [u8; 4],
+    pub chunk_type: [u8; 4],
 }
 #[derive(Debug)]
 pub enum ChunkTypeError {
@@ -25,39 +25,39 @@ impl fmt::Display for ChunkTypeError {
 
 impl ChunkType {
     fn bytes(&self) -> [u8; 4] {
-        self.chunk
+        self.chunk_type
     }
 
     fn is_critical(&self) -> bool {
-        let first_byte = self.chunk.first().unwrap();
+        let first_byte = self.chunk_type.first().unwrap();
         let char = char::from(*first_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_public(&self) -> bool {
-        let second_byte = self.chunk.get(1).unwrap();
+        let second_byte = self.chunk_type.get(1).unwrap();
         let char = char::from(*second_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_reserved_bit_valid(&self) -> bool {
-        let third_byte = self.chunk.get(2).unwrap();
+        let third_byte = self.chunk_type.get(2).unwrap();
         let char = char::from(*third_byte);
 
         char == char.to_ascii_uppercase()
     }
 
     fn is_safe_to_copy(&self) -> bool {
-        let fourth_byte = self.chunk.get(3).unwrap();
+        let fourth_byte = self.chunk_type.get(3).unwrap();
         let char = char::from(*fourth_byte);
 
         char == char.to_ascii_lowercase()
     }
 
     fn is_valid(&self) -> bool {
-        let valid_ascii_alphabet = self.chunk.iter().all(|byte| byte.is_ascii_alphabetic());
+        let valid_ascii_alphabet = self.chunk_type.iter().all(|byte| byte.is_ascii_alphabetic());
         valid_ascii_alphabet && self.is_reserved_bit_valid()
     }
 }
@@ -65,12 +65,12 @@ impl ChunkType {
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
 
-    fn try_from(chunk: [u8; 4]) -> Result<Self> {
-        let chunk_type = ChunkType { chunk };
-        // let valid_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
+    fn try_from(chunk_type: [u8; 4]) -> Result<Self> {
+        let chunk_type = ChunkType { chunk_type };
+        println!("{}", chunk_type.is_valid());
 
         chunk_type.is_valid().then_some(chunk_type).ok_or({
-            let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
+            let error_message = "Invalid ASCII character(s). Chunk type must be composed of four alphabetic ASCII bytes, with the third being uppercase.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
     }
@@ -81,10 +81,10 @@ impl FromStr for ChunkType {
 
     fn from_str(s: &str) -> Result<Self> {
         let chunk_arr: [u8; 4] = s.as_bytes().try_into()?;
-        let chunk_type = ChunkType { chunk: chunk_arr };
+        let chunk_type = ChunkType { chunk_type: chunk_arr };
 
         chunk_type.is_valid().then_some(chunk_type).ok_or({
-            let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
+            let error_message = "Invalid ASCII character(s). Chunk type must be composed of four alphabetic ASCII bytes, with the third being uppercase.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
     }
@@ -92,7 +92,7 @@ impl FromStr for ChunkType {
 
 impl fmt::Display for ChunkType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let result = str::from_utf8(&self.chunk).unwrap().to_string();
+        let result = str::from_utf8(&self.chunk_type).unwrap().to_string();
         write!(f, "{}", result)
     }
 }

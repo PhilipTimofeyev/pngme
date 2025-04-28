@@ -68,7 +68,7 @@ impl Chunk {
             result.push(byte)
         }
 
-        for byte in self.chunk_type.chunk {
+        for byte in self.chunk_type.chunk_type {
             result.push(byte);
         }
 
@@ -135,7 +135,7 @@ impl fmt::Display for Chunk {
 fn get_crc(chunk_type: &ChunkType, data: &[u8]) -> u32 {
     const PNG_CRC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
     let mut digest = PNG_CRC.digest();
-    digest.update(chunk_type.chunk.as_ref());
+    digest.update(chunk_type.chunk_type.as_ref());
     digest.update(data);
     digest.finalize()
 }
