@@ -57,7 +57,8 @@ impl ChunkType {
     }
 
     fn is_valid(&self) -> bool {
-        self.is_reserved_bit_valid()
+        let valid_ascii_alphabet = self.chunk.iter().all(|byte| byte.is_ascii_alphabetic());
+        valid_ascii_alphabet && self.is_reserved_bit_valid()
     }
 }
 
@@ -66,9 +67,8 @@ impl TryFrom<[u8; 4]> for ChunkType {
 
     fn try_from(chunk: [u8; 4]) -> Result<Self> {
         let chunk_type = ChunkType { chunk };
-        let valid_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
 
-        valid_ascii_alphabet.then_some(chunk_type).ok_or({
+        chunk_type.is_valid().then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
@@ -178,6 +178,15 @@ mod tests {
         assert!(!chunk.is_valid());
 
         let chunk = ChunkType::from_str("Ru1t");
+        assert!(chunk.is_err());
+    }
+    
+    #[test]
+    pub fn test_invalid_chunk_is_valid_ascii() {
+        let chunk = ChunkType::from_str("Rust").unwrap();
+        assert!(!chunk.is_valid());
+
+        let chunk = ChunkType::from_str("R.st");
         assert!(chunk.is_err());
     }
 
