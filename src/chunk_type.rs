@@ -67,6 +67,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
 
     fn try_from(chunk: [u8; 4]) -> Result<Self> {
         let chunk_type = ChunkType { chunk };
+        // let valid_ascii_alphabet = chunk.iter().all(|byte| byte.is_ascii_alphabetic());
 
         chunk_type.is_valid().then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
@@ -79,11 +80,10 @@ impl FromStr for ChunkType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let valid_ascii_alphabet = s.chars().all(|c| c.is_ascii_alphabetic());
         let chunk_arr: [u8; 4] = s.as_bytes().try_into()?;
         let chunk_type = ChunkType { chunk: chunk_arr };
 
-        valid_ascii_alphabet.then_some(chunk_type).ok_or({
+        chunk_type.is_valid().then_some(chunk_type).ok_or({
             let error_message = "Invalid ASCII character(s). Chunk type must be composed of alphabetic ASCII bytes.".to_string();
             ChunkTypeError::InvalidASCII(error_message).into()
         })
@@ -150,8 +150,8 @@ mod tests {
 
     #[test]
     pub fn test_chunk_type_is_reserved_bit_invalid() {
-        let chunk = ChunkType::from_str("Rust").unwrap();
-        assert!(!chunk.is_reserved_bit_valid());
+        let chunk = ChunkType::from_str("Rust");
+        assert!(chunk.is_err());
     }
 
     #[test]
@@ -174,17 +174,26 @@ mod tests {
 
     #[test]
     pub fn test_invalid_chunk_is_valid() {
-        let chunk = ChunkType::from_str("Rust").unwrap();
-        assert!(!chunk.is_valid());
+        let chunk = ChunkType::from_str("Rust");
+        assert!(chunk.is_err());
 
         let chunk = ChunkType::from_str("Ru1t");
+        assert!(chunk.is_err());
+    }
+
+    #[test]
+    pub fn test_invalid_chunk_is_valid_as_bytes() {
+        let chunk =  ChunkType::try_from([82, 117, 115, 116]);
+        assert!(chunk.is_err());
+
+        let chunk =  ChunkType::try_from([82, 2, 83, 116]);
         assert!(chunk.is_err());
     }
     
     #[test]
     pub fn test_invalid_chunk_is_valid_ascii() {
-        let chunk = ChunkType::from_str("Rust").unwrap();
-        assert!(!chunk.is_valid());
+        let chunk = ChunkType::from_str("Rust");
+        assert!(chunk.is_err());
 
         let chunk = ChunkType::from_str("R.st");
         assert!(chunk.is_err());
