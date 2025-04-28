@@ -49,7 +49,7 @@ impl Png {
     }
 
     pub fn append_chunk(&mut self, chunk: Chunk) {
-        self.chunks.push(chunk)
+        self.chunks.insert(self.chunks.len() - 1, chunk)
     }
 
     pub fn remove_first_chunk(&mut self, chunk_type: &str) -> Result<Chunk> {
@@ -87,24 +87,24 @@ impl std::error::Error for PNGError {}
 impl TryFrom<&[u8]> for Png {
     type Error = Error;
 
-    fn try_from(chunks: &[u8]) -> Result<Self> {
-        let header: [u8; 8] = chunks[0..=7].try_into()?;
-        let chunks = &chunks[8..];
-        let mut file = Cursor::new(chunks);
+    fn try_from(bytes: &[u8]) -> Result<Self> {
+        let header: [u8; 8] = bytes[0..=7].try_into()?;
+        let chunks = &bytes[8..];
+        let mut cursor = Cursor::new(chunks);
         let mut all_chunks = Vec::new();
 
         loop {
             let mut buffer = vec![0; 4];
 
-            if let Err(_e) = file.read_exact(&mut buffer) {
+            if let Err(_e) = cursor.read_exact(&mut buffer) {
                 break;
             }
             let chunk_length = u32::from_be_bytes(<[u8; 4]>::try_from(buffer.clone()).unwrap());
 
-            file.seek_relative(-4)?;
+            cursor.seek_relative(-4)?;
             buffer = vec![0; (chunk_length + 12) as usize];
 
-            if let Err(_e) = file.read_exact(&mut buffer) {
+            if let Err(_e) = cursor.read_exact(&mut buffer) {
                 break;
             }
 

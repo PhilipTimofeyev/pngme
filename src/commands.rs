@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
+use std::fs::read;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -11,7 +12,7 @@ use crate::{Result, chunk};
 
 /// Encodes a message into a PNG file and saves the result
 pub fn encode(args: EncodeArgs) -> Result<()> {
-    let png_file = read_file(&args.filepath)?;
+    let png_file = read(&args.filepath)?;
     let mut result = Png::try_from(&png_file[..])?;
 
     let chunk_type = ChunkType::from_str(&args.chunk_type)?;
